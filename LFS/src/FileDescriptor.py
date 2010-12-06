@@ -19,6 +19,10 @@ class FileDescriptor(object):
         self.isopen = False
 
     def _getinode(self):
+        # pracheer:
+        if not self.isopen:
+            raise FileSystemException("The File is Closed!")
+        
         # find the inode's position on disk
         inodeblocknumber = InodeMap.inodemap.lookup(self.inodenumber)
         # get the inode
@@ -26,18 +30,34 @@ class FileDescriptor(object):
         return inodeobject
 
     def getlength(self):
+        # pracheer:
+        if not self.isopen:
+            raise FileSystemException("The File is Closed!")
+
         inodeobject = self._getinode()
         return inodeobject.filesize
 
     def read(self, readlength):
+        # pracheer:
+        if not self.isopen:
+            raise FileSystemException("The File is Closed!")
+        
         inodeobject = self._getinode()
         data = inodeobject.read(self.position, readlength)
         self.position += len(data)
         return data
 
-    def write(self, data):
+    def write(self, data, overwrite = False):
         # pracheer:
+        if not self.isopen:
+            raise FileSystemException("The File is Closed!")
+        
         inodeobject = self._getinode()
-        inodeobject.write(inodeobject.filesize, data, skip_inodemap_update=False)
+        if(overwrite):
+            inodeobject.write(0, data, skip_inodemap_update=False)
+        else:
+            inodeobject.write(inodeobject.filesize, data, skip_inodemap_update=False)
+            
+        self.position += len(data) 
 
            

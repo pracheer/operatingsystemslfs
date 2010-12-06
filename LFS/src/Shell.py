@@ -84,7 +84,7 @@ class Shell:
             return
 
         fd = LFS.filesystem.open(canonicalize(args[1], self.currentDirectory))
-        fd.write(args[2])
+        fd.write(args[2], overwrite = True)
         fd.close()
 
     def mkdir(self, args):

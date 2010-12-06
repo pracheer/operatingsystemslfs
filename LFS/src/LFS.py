@@ -87,9 +87,11 @@ class LFSClass:
     # write all in memory data structures to disk
     def sync(self):
         # pracheer:
-        
-        # XXX - do this tomorrow! after the meteor shower!
-        pass
+        maxinode = getmaxinode()
+        str, generationcount = InodeMap.inodemap.save_inode_map(maxinode)
+        blockno = Segment.segmentmanager.write_to_newblock(str)
+        Segment.segmentmanager.update_inodemap_position(blockno, generationcount)
+        Segment.segmentmanager.flush()
 
     # restore in memory data structures (e.g. inode map) from disk
     def restore(self):
@@ -124,7 +126,6 @@ class LFSClass:
         parentinodeid = self.rootinode.id
         i = 1;
         while( (i < len(splits)) & ((parentinodeid!=None) | (parentinodeid!="") )):
-            print 'inside.'
             nodeid = self.search_inode_in_parent(splits[i], parentinodeid)
             i += 1
             parentinodeid = nodeid
