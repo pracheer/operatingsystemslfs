@@ -1,6 +1,7 @@
 import struct
 import Segment
 from Segment import SegmentClass
+from Constants import DELETEDNODEID
 
 # the task of the InodeMap is to map inodes to their
 # position on the disk
@@ -14,6 +15,7 @@ class InodeMapClass:
     def lookup(self, inodeno):
         if not self.mapping.has_key(inodeno):
             print "Lookup for inode failed because that inode was never created", inodeno
+
         return self.mapping[inodeno]
 
     # following the write of an inode, update the

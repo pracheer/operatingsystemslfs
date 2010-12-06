@@ -11,7 +11,7 @@ from LFS import LFSClass
 from InodeMap import InodeMapClass
 from Inode import Inode
 from FSE import FileSystemException
-
+from Constants import DELETEDNODEID
 # given a pathname, converts into a canonical, absolute path
 # by prepending the current directory when necessary
 def canonicalize(path, curdir):
@@ -69,6 +69,8 @@ class Shell:
         curdirpath = canonicalize(args[1] if len(args) > 1 else '', self.currentDirectory)
         dd = LFS.filesystem.open(curdirpath, isdir=True)
         for name, inode in dd.enumerate():
+            if inode == DELETEDNODEID:
+                continue
             size, isdir = LFS.filesystem.stat("%s%s%s" % (curdirpath, '/' if curdirpath[-1:] != '/' else '', name))
             print "%s\tinode=%d\ttype=%s\tsize=%d" % (name, inode, "DIR" if isdir else "FILE", size)
 
@@ -107,13 +109,33 @@ class Shell:
     def sync(self, args):
         LFS.filesystem.sync()
 
+    # deletes a file. this only remove the file from its parent directory making it inaccessible.
+    # It does not delete the contents.
     def rm(self, args):
-        # XXX - do this tomorrow! after the meteor shower!
-        pass
-
+        # pracheer:
+        if len(args) != 2:
+            print "Usage: rm filename"
+            return
+        
+        file = canonicalize(args[1], self.currentDirectory)
+        stat, isDir = LFS.filesystem.stat(file)
+        if isDir:
+            raise FileSystemException(args[1] + " is not a file. Use rmdir instead") 
+        else:
+            LFS.filesystem.unlink(file)
+            
     def rmdir(self, args):
-        # XXX - do this tomorrow! after the meteor shower!
-        pass
+        # pracheer:
+        if len(args) != 2:
+            print "Usage: rmdir filename"
+            return
+        
+        file = canonicalize(args[1], self.currentDirectory)
+        stat, isDir = LFS.filesystem.stat(file)
+        if not isDir:
+            raise FileSystemException(args[1] + " is not a directory. Use rm instead") 
+        else:
+            LFS.filesystem.unlink(file)
 
     def quit(self, args):
         print "\nSo Long, and Thanks for All the Fish!"
