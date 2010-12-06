@@ -3,7 +3,7 @@ import sys, struct, os, random, math, pickle
 from threading import Thread, Lock, Condition, Semaphore
 
 from Disk import *
-from Constants import FILENAMELEN
+from Constants import FILENAMELEN, DELETEDNODEID
 from FileDescriptor import FileDescriptor
 from FSE import FileSystemException
 

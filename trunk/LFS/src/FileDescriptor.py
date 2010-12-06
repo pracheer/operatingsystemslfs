@@ -58,6 +58,4 @@ class FileDescriptor(object):
         else:
             inodeobject.write(inodeobject.filesize, data, skip_inodemap_update=False)
             
-        self.position += len(data) 
-
-           
+        self.position += len(data)
