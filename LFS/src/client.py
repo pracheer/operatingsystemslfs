@@ -6,7 +6,7 @@ import threading
 
 host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
 port = int(sys.argv[2]) if len(sys.argv) > 2 else 8765
-toaddr = sys.argv[3] if len(sys.argv) > 3 else "prac@hotmail.com"
+toaddr = sys.argv[3] if len(sys.argv) > 3 else "uday@hotmail.com"
 fromaddr = sys.argv[4] if len(sys.argv) > 4 else "nobody@example.com"
 
 class MsgSender(threading.Thread):

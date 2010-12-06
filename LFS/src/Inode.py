@@ -70,7 +70,7 @@ class Inode:
                 self.indirectblock = datablock
             else :
                 if blockoffset >= (BLOCKSIZE / 4):
-                    raise FileSystemException("File is full.")
+                    raise FileSystemException("File's maximum size is reached")
                  
                 olddata = Segment.segmentmanager.blockread(self.indirectblock)
                 # number of pointers to datablocks in indirect block
