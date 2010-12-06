@@ -151,25 +151,26 @@ class Shell:
         self.quit(args)
 
 def shellmainloop():
-	while True:
-	    try:
-		    commandline = raw_input("[LFS] " + shell.currentDirectory + "> ")
-		    commandline = commandline.strip()
-	    except EOFError:
-		    shell.exit(None)
-	    pieces = commandline.split(" ")
+    while True:
+        try:
+            commandline = raw_input("[LFS] " + shell.currentDirectory + "> ")
+            commandline = commandline.strip()
+        except EOFError:
+            shell.exit(None)
+        pieces = commandline.split(" ")
 
-	    try:
-		    func = getattr(shell, pieces[0])
-	    except AttributeError:
-		    print "I don't understand what you are saying but the answer is 42."
-		    continue
+        try:
+            func = getattr(shell, pieces[0])
+        except AttributeError:
+            print "I don't understand what you are saying but the answer is 42."
+            continue
 
-	    try:
-		    func(pieces)
-	    except FileSystemException, fse:
-		    print "Error: %s" % fse	
+        try:
+            func(pieces)
+        except FileSystemException, fse:
+            print "Error: %s" % fse
+            
 shell = Shell()
 if __name__ == "__main__":
-	shellmainloop()
+    shellmainloop()
 

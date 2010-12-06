@@ -14,7 +14,7 @@ class EmailWriter:
         with self.mutex:
             print "writing emails to LFS"
             mailto = mailto.strip()
-            filename = time.clock()
+            filename = time.time().split(".")[0]
             self.runcommand("cd /mails/"+mailto)
             self.runcommand("create " + str(filename) + " 20")
             self.runcommand("write " + str(filename) + " " + msg)
