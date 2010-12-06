@@ -12,11 +12,17 @@ from InodeMap import InodeMapClass
 from Inode import Inode
 from FSE import FileSystemException
 from Constants import DELETEDNODEID
+
 # given a pathname, converts into a canonical, absolute path
 # by prepending the current directory when necessary
 def canonicalize(path, curdir):
     if path == '':
         return curdir
+    elif path[:2] == "..":
+        parent = LFS.find_parent_name(curdir)
+        return canonicalize(path[3:], parent)
+    elif path[:1] == ".":
+        return canonicalize(path[2:], curdir)
     elif path[0] != '/':
         return "%s%s%s" % (curdir, '/' if curdir[-1:] != '/' else '', path)
     else:
