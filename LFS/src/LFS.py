@@ -10,7 +10,7 @@ from Inode import Inode, getmaxinode, setmaxinode
 from InodeMap import InodeMapClass
 from FileDescriptor import FileDescriptor
 from DirectoryDescriptor import DirectoryDescriptor
-from Constants import FILENAMELEN, DELETEDNODEID
+from Constants import FILENAMELEN, DELETEDNODEID, PARENTDIR, CURRENTDIR
 from FSE import FileSystemException
 import Disk
 
@@ -61,6 +61,9 @@ class LFSClass:
         parentdirblockloc = InodeMap.inodemap.lookup(parentdirinodenumber)
         parentdirinode = Inode(str=Segment.segmentmanager.blockread(parentdirblockloc))
         self.append_directory_entry(parentdirinode, find_filename(filename), newinode)
+        if isdir:
+            self.append_directory_entry(newinode, CURRENTDIR, newinode)
+            self.append_directory_entry(newinode, PARENTDIR, parentdirinode)
         
         if isdir:
             return DirectoryDescriptor(newinode.id)
@@ -72,7 +75,7 @@ class LFSClass:
         inodenumber = self.searchfiledir(pathname)
         # pracheer:
         if (inodenumber is None) | (inodenumber == DELETEDNODEID):
-            raise FileSystemException("File or Directory Does Not Exist")
+            raise FileSystemException("File or Directory Does Not Exist:"+pathname)
             
         inodeblocknumber = InodeMap.inodemap.lookup(inodenumber)
         inodeobject = Inode(str=Segment.segmentmanager.blockread(inodeblocknumber))
@@ -80,17 +83,26 @@ class LFSClass:
 
     # delete the given file
     def unlink(self, pathname):
+        fileinode = self.searchfiledir(pathname)
+        fileinodeblocknum = InodeMap.inodemap.lookup(fileinode)
+        fileinodeobject = Inode(str=Segment.segmentmanager.blockread(fileinodeblocknum))
+        if fileinodeobject.isDirectory :
+            dd = DirectoryDescriptor(fileinodeobject.id)
+            for name, inode in dd.enumerate():
+                if (name != CURRENTDIR) & (name != PARENTDIR):
+                    raise FileSystemException("Directory not empty.")
+            
         parent = find_parent_name(pathname)
         filename = find_filename(pathname)
         parentinode = self.searchfiledir(parent)
-        inodeblocknumber = InodeMap.inodemap.lookup(parentinode)
-        inodeobject = Inode(str=Segment.segmentmanager.blockread(inodeblocknumber))
-        if inodeobject.isDirectory :
-            dd = DirectoryDescriptor(inodeobject.id)
+        parentinodeblocknum = InodeMap.inodemap.lookup(parentinode)
+        parentinodeobject = Inode(str=Segment.segmentmanager.blockread(parentinodeblocknum))
+        if parentinodeobject.isDirectory :
+            dd = DirectoryDescriptor(parentinodeobject.id)
             charcount = 0;
             for name, inode in dd.enumerate():
                 if name == filename :
-                    inodeobject.write(charcount, struct.pack("%dsI" % FILENAMELEN, name, DELETEDNODEID), skip_inodemap_update = False)
+                    parentinodeobject.write(charcount, struct.pack("%dsI" % FILENAMELEN, name, DELETEDNODEID), skip_inodemap_update = False)
                 else :  
                     charcount += 32
         
