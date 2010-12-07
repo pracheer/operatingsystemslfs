@@ -12,41 +12,46 @@ DEBUG=False
 # the segmentmanager manages the current segment, flushing it
 # to disk as necessary and picking up another segment to work on
 class SegmentManagerClass:
-    def __init__(self):
-        self.segcounter = 0
-        self.currentseg=SegmentClass(self.segcounter)
+    def __init__(self, lock):
+        self.lock = lock
+        with self.lock:
+            self.segcounter = 0
+            self.currentseg=SegmentClass(self.segcounter)
         
     # write the given data to a free block in the current segment.
     # if no free block exists, find another segment with a free block in it
     def write_to_newblock(self, data):
-        blockno = self.currentseg.write_to_newblock(data)
-        if (blockno == NUMBLOCKS):
-            self.flush()
-            self.segcounter += 1
-            if(self.segcounter == NUMSEGMENTS):
-                print "the disk just got full"
-            else:
-                self.currentseg = SegmentClass(self.segcounter)
+        with self.lock:
+            blockno = self.currentseg.write_to_newblock(data)
+            if (blockno == NUMBLOCKS):
+                self.flush()
+                self.segcounter += 1
+                if(self.segcounter == NUMSEGMENTS):
+                    print "the disk just got full"
+                else:
+                    self.currentseg = SegmentClass(self.segcounter)
+            
+            elif(blockno == -1):
+                raise FileSystemException("Disk is full")
         
-        elif(blockno == -1):
-            raise FileSystemException("Disk is full")
-    
-        return blockno
+            return blockno
 
     # read the requested block if it is in memory, if not, read it from disk
     def blockread(self, blockno):
-        if self.is_in_memory(blockno):
-            return self.read_in_place(blockno)
-        else:
-            return Disk.disk.blockread(blockno)
+        with self.lock:
+            if self.is_in_memory(blockno):
+                return self.read_in_place(blockno)
+            else:
+                return Disk.disk.blockread(blockno)
 
     # write the requested block, to the disk, or else to memory if
     # this block is part of the current segment
     def blockwrite(self, blockno, data):
-        if self.is_in_memory(blockno):
-            self.update_in_place(blockno, data)
-        else:
-            Disk.disk.blockwrite(blockno)
+        with self.lock:
+            if self.is_in_memory(blockno):
+                self.update_in_place(blockno, data)
+            else:
+                Disk.disk.blockwrite(blockno)
 
     # returns true if the given block disk address is currently in memory
     def is_in_memory(self, blockno):
@@ -67,23 +72,26 @@ class SegmentManagerClass:
 
     # update the current segment's superblock with the latest position & gen number of the inodemap
     def update_inodemap_position(self, imloc, imgen):
-        self.currentseg.superblock.update_inodemap_position(imloc, imgen)
+        with self.lock:
+            self.currentseg.superblock.update_inodemap_position(imloc, imgen)
 
     # flush the current segment to the disk
     def flush(self):
-        self.currentseg.flush()
+        with self.lock:
+            self.currentseg.flush()
 
     def locate_latest_inodemap(self):
-        # go through all segments, read all superblocks,
-        # find the inodemap with the highest generation count
-        maxgen=-1
-        imlocation=-1
-        for segno in range(0, NUMSEGMENTS):
-            superblock=SuperBlock(data=Disk.disk.blockread(segno * SEGMENTSIZE))
-            if superblock.inodemapgeneration > 0 and superblock.inodemapgeneration > maxgen:
-                maxgen = superblock.inodemapgeneration
-                imlocation = superblock.inodemaplocation
-        return imlocation
+        with self.lock:
+            # go through all segments, read all superblocks,
+            # find the inodemap with the highest generation count
+            maxgen=-1
+            imlocation=-1
+            for segno in range(0, NUMSEGMENTS):
+                superblock=SuperBlock(data=Disk.disk.blockread(segno * SEGMENTSIZE))
+                if superblock.inodemapgeneration > 0 and superblock.inodemapgeneration > maxgen:
+                    maxgen = superblock.inodemapgeneration
+                    imlocation = superblock.inodemaplocation
+            return imlocation
     
 class SuperBlock:
     def __init__(self, data=None):
@@ -113,7 +121,7 @@ class SuperBlock:
     def update_inodemap_position(self, imlocation, imgeneration):
         self.inodemapgeneration=imgeneration
         self.inodemaplocation=imlocation
-	
+
 class SegmentClass:
     def __init__(self, segmentnumber):
         self.segmentbase = segmentnumber * SEGMENTSIZE

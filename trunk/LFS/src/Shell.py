@@ -32,13 +32,14 @@ def canonicalize(path, curdir):
 class Shell:
     def __init__(self):
         self.currentDirectory = "/"
-
+        
     def help(self, args):
         print "try making a new disk with mkfs, then do create, ls, cat, mkdir, cd, rmdir, etc"
 
     # creates a brand new filesystem, or else
     # mounts the last filesystem that was created with mkfs previously
     def mkfs(self, args):
+        global segment_lock
         if len(args) > 2:
             print "Usage: mkfs [-reuse]"
             return
@@ -50,7 +51,7 @@ class Shell:
                 print "Usage: mkfs [-reuse]"
                 return
         Disk.disk = DiskClass(brandnew=brandnew)
-        Segment.segmentmanager = SegmentManagerClass()
+        Segment.segmentmanager = SegmentManagerClass(segment_lock)
         InodeMap.inodemap = InodeMapClass()
         LFS.filesystem = LFSClass(initdisk=brandnew)
         if brandnew:
@@ -153,7 +154,7 @@ class Shell:
         self.quit(args)
 
 def shellmainloop():
-     while True:
+    while True:
         try:
             commandline = raw_input("[LFS] " + shell.currentDirectory + "> ")
             commandline = commandline.strip()
@@ -173,53 +174,62 @@ def shellmainloop():
             print "Error: %s" % fse
 
 class Test(threading.Thread):
-    def __init__(self, first = False):
+    def __init__(self):
         threading.Thread.__init__ ( self )
         self.shell = Shell()
-        self.first = first
-        if first:
-            self.runcommand("mkfs")
+        self.runcommand("mkfs -reuse")
             
     def runcommand(self, command):
-        global shell
         args = command.split(" ")
-        func = getattr(shell, args[0])
+        func = getattr(self.shell, args[0])
         func(args)
     
     def run(self):
-        if self.first:
-            self.runcommand("create a 20")
-            self.runcommand("write a " + 'a'*20)
-            self.runcommand("mkdir pg298")
-            self.runcommand("cd pg298")
-            self.runcommand("mkdir pg298_2")
-            self.runcommand("cd pg298_2")
-            self.runcommand("mkdir pg298_3")
-            self.runcommand("cd pg298_3")
-            self.runcommand("create pg298file 30")
-            self.runcommand("write pg298file "+ 'pg298'*10)
-            self.runcommand("sync")
-        else:
-            self.runcommand("create a 20")
-            self.runcommand("write a " + 'b'*20)
-            self.runcommand("mkdir pracheer")
-            self.runcommand("cd pracheer")
-            self.runcommand("mkdir pracheer_2")
-            self.runcommand("cd pracheer_2")
-            self.runcommand("mkdir pracheer_3")
-            self.runcommand("cd pracheer_3")
-            self.runcommand("create pg298file 30")
-            self.runcommand("write pg298file "+ 'pg298'*10)
-            self.runcommand("sync")
-            
+        self.runcommand("create a 20")
+        self.runcommand("write a " + 'a'*20)
+        self.runcommand("mkdir pg298")
+        self.runcommand("cd pg298")
+        self.runcommand("mkdir pg298_2")
+        self.runcommand("cd pg298_2")
+        self.runcommand("mkdir pg298_3")
+        self.runcommand("cd pg298_3")
+        self.runcommand("create pg298file 30")
+        self.runcommand("write pg298file "+ 'pg298'*10)
+        self.runcommand("sync")
+        
+class Test2(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__ ( self )
+        self.shell = Shell()
+        self.runcommand("mkfs -reuse")
+        
+    def runcommand(self, command):
+        args = command.split(" ")
+        func = getattr(self.shell, args[0])
+        func(args)
     
+    def run(self):
+        self.runcommand("create b 20")
+        self.runcommand("write b " + 'b'*20)
+        self.runcommand("mkdir pracheer")
+        self.runcommand("cd pracheer")
+        self.runcommand("mkdir pracheer_2")
+        self.runcommand("cd pracheer_2")
+        self.runcommand("mkdir pracheer_3")
+        self.runcommand("cd pracheer_3")
+        self.runcommand("create pg298file 30")
+        self.runcommand("write pg298file "+ 'pg298'*10)
+        self.runcommand("sync")
+            
+segment_lock = Lock()    
+ 
 shell = Shell()
 if __name__ == "__main__":
-    test1 = Test(True)
-    test2 = Test()
-    
-    test1.start()
-    test2.start()
+#    test1 = Test()
+#    test2 = Test2()
+#    
+#    test1.start()
+#    test2.start()
     
     shellmainloop()
 
