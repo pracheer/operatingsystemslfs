@@ -52,7 +52,7 @@ class Inode:
             str += struct.pack("I", self.fileblocks[i])
         str += struct.pack("I", self.indirectblock)
         str += struct.pack("?", self.isDirectory)
-	return str
+        return str
 
     # given the number of a data block inside a file, i.e. 0 for
     # the first block, 1 for the second and so forth, and a 
