@@ -4,7 +4,7 @@ Created on Dec 6, 2010
 @author: Pracheer (pg298)
 '''
 import threading
-import Shell
+from Shell import Shell
 
 class Test(threading.Thread):
     def __init__(self):
