@@ -11,7 +11,8 @@ from LFS import LFSClass
 from InodeMap import InodeMapClass
 from Inode import Inode
 from FSE import FileSystemException
-from Constants import DELETEDNODEID
+from Constants import DELETEDNODEID, CURRENTDIR
+import threading
 
 # given a pathname, converts into a canonical, absolute path
 # by prepending the current directory when necessary
@@ -54,6 +55,7 @@ class Shell:
         LFS.filesystem = LFSClass(initdisk=brandnew)
         if brandnew:
             rootinode = Inode(isdirectory=True)
+            LFS.filesystem.append_directory_entry(rootinode, CURRENTDIR, rootinode)
         else:
             LFS.filesystem.restore()
 
@@ -99,7 +101,7 @@ class Shell:
         LFS.filesystem.create(canonicalize(args[1], self.currentDirectory), isdir=True)
 
     def cd(self, args):
-	# We have to check if the given path is valid!!
+        # We have to check if the given path is valid!!
         if len(args) != 2:
             print "Usage: cd dirname"
             return
@@ -151,7 +153,7 @@ class Shell:
         self.quit(args)
 
 def shellmainloop():
-    while True:
+     while True:
         try:
             commandline = raw_input("[LFS] " + shell.currentDirectory + "> ")
             commandline = commandline.strip()
@@ -169,8 +171,55 @@ def shellmainloop():
             func(pieces)
         except FileSystemException, fse:
             print "Error: %s" % fse
+
+class Test(threading.Thread):
+    def __init__(self, first = False):
+        threading.Thread.__init__ ( self )
+        self.shell = Shell()
+        self.first = first
+        if first:
+            self.runcommand("mkfs")
             
+    def runcommand(self, command):
+        global shell
+        args = command.split(" ")
+        func = getattr(shell, args[0])
+        func(args)
+    
+    def run(self):
+        if self.first:
+            self.runcommand("create a 20")
+            self.runcommand("write a " + 'a'*20)
+            self.runcommand("mkdir pg298")
+            self.runcommand("cd pg298")
+            self.runcommand("mkdir pg298_2")
+            self.runcommand("cd pg298_2")
+            self.runcommand("mkdir pg298_3")
+            self.runcommand("cd pg298_3")
+            self.runcommand("create pg298file 30")
+            self.runcommand("write pg298file "+ 'pg298'*10)
+            self.runcommand("sync")
+        else:
+            self.runcommand("create a 20")
+            self.runcommand("write a " + 'b'*20)
+            self.runcommand("mkdir pracheer")
+            self.runcommand("cd pracheer")
+            self.runcommand("mkdir pracheer_2")
+            self.runcommand("cd pracheer_2")
+            self.runcommand("mkdir pracheer_3")
+            self.runcommand("cd pracheer_3")
+            self.runcommand("create pg298file 30")
+            self.runcommand("write pg298file "+ 'pg298'*10)
+            self.runcommand("sync")
+            
+    
 shell = Shell()
 if __name__ == "__main__":
+    test1 = Test(True)
+    test2 = Test()
+    
+    test1.start()
+    test2.start()
+    
     shellmainloop()
 
