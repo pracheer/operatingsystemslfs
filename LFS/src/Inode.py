@@ -6,9 +6,12 @@ import InodeMap
 from InodeMap import InodeMapClass
 from Constants import BLOCKSIZE, INVALIDBLOCKADDRESS
 from FSE import FileSystemException
+from threading import Lock
+#from Shell import inode_lock
 
 NUMDIRECTBLOCKS=100 # can have as many as 252 and still fit an Inode in a 1024 byte block
 inodeidpool=1  # 1 is reserved for the root inode
+inode_lock = Lock()
 
 def getmaxinode():
     global inodeidpool
@@ -20,27 +23,29 @@ def setmaxinode(maxii):
 class Inode:
     def __init__(self, str=None, isdirectory=False):
         global inodeidpool
-        if str is not None:
-            self.id = struct.unpack("I", str[0:4])[0]
-            str = str[4:]
-            self.filesize = struct.unpack("I", str[0:4])[0]
-            str = str[4:]
-            self.fileblocks = [0]*NUMDIRECTBLOCKS
-            for i in range(0, NUMDIRECTBLOCKS): 
-                self.fileblocks[i] = struct.unpack("I", str[0:4])[0]
+        global inode_lock
+        with inode_lock:
+            if str is not None:
+                self.id = struct.unpack("I", str[0:4])[0]
                 str = str[4:]
-            self.indirectblock = struct.unpack("I", str[0:4])[0]
-            str = str[4:]
-            self.isDirectory = struct.unpack("?", str[0])[0]
-        else:
-            self.id = inodeidpool
-            inodeidpool += 1
-            self.filesize = 0
-            self.fileblocks = [0]*NUMDIRECTBLOCKS
-            self.indirectblock = 0
-            self.isDirectory = isdirectory
-            # write the new inode to disk 
-            InodeMap.inodemap.update_inode(self.id, self.serialize())
+                self.filesize = struct.unpack("I", str[0:4])[0]
+                str = str[4:]
+                self.fileblocks = [0]*NUMDIRECTBLOCKS
+                for i in range(0, NUMDIRECTBLOCKS): 
+                    self.fileblocks[i] = struct.unpack("I", str[0:4])[0]
+                    str = str[4:]
+                self.indirectblock = struct.unpack("I", str[0:4])[0]
+                str = str[4:]
+                self.isDirectory = struct.unpack("?", str[0])[0]
+            else:
+                self.id = inodeidpool
+                inodeidpool += 1
+                self.filesize = 0
+                self.fileblocks = [0]*NUMDIRECTBLOCKS
+                self.indirectblock = 0
+                self.isDirectory = isdirectory
+                # write the new inode to disk 
+                InodeMap.inodemap.update_inode(self.id, self.serialize())
 
     # returns a serialized version of the Inode that fits in a fixed
     # size data block
@@ -71,14 +76,17 @@ class Inode:
             else :
                 if blockoffset >= (BLOCKSIZE / 4):
                     raise FileSystemException("File's maximum size is reached")
-                 
-                olddata = Segment.segmentmanager.blockread(self.indirectblock)
+                
+                if self.indirectblock != 0:
+                    olddata = Segment.segmentmanager.blockread(self.indirectblock)
+                else:
+                    olddata = struct.pack("I", INVALIDBLOCKADDRESS)*256
+                    
                 # number of pointers to datablocks in indirect block
                 numentries = len(olddata) / 4
                 if blockoffset < numentries:
                     newdata = olddata[0:blockoffset*4] + struct.pack("I", blockaddress) + olddata[(blockoffset+1)*4:]
-                else:
-                    newdata = olddata + struct.pack("I", INVALIDBLOCKADDRESS)*(numentries - blockoffset - 1) + + struct.pack("I", blockaddress)
+                    
                 datablock = Segment.segmentmanager.write_to_newblock(newdata)
                 self.indirectblock = datablock
 
@@ -163,3 +171,4 @@ class Inode:
         self.filesize = max(self.filesize, offset + size)
         if not skip_inodemap_update:
             InodeMap.inodemap.update_inode(self.id, self.serialize())
+            

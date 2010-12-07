@@ -7,12 +7,16 @@ from Constants import FILENAMELEN, DELETEDNODEID
 from FileDescriptor import FileDescriptor
 from FSE import FileSystemException
 
+lock = Lock()
+
 class DirectoryDescriptor(FileDescriptor):
     def __init__(self, inodenumber):
-        super(DirectoryDescriptor, self).__init__(inodenumber)
-        inodeobject = self._getinode()
-        if not inodeobject.isDirectory:
-            raise FileSystemException("Not a directory - inode %d" % inodenumber)
+        global lock
+        with lock:
+            super(DirectoryDescriptor, self).__init__(inodenumber)
+            inodeobject = self._getinode()
+            if not inodeobject.isDirectory:
+                raise FileSystemException("Not a directory - inode %d" % inodenumber)
 
     def enumerate(self):
         length = self.getlength()
