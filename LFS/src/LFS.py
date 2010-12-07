@@ -89,7 +89,7 @@ class LFSClass:
         if fileinodeobject.isDirectory :
             dd = DirectoryDescriptor(fileinodeobject.id)
             for name, inode in dd.enumerate():
-                if (name != CURRENTDIR) & (name != PARENTDIR):
+                if (name != CURRENTDIR) & (name != PARENTDIR) & (inode != DELETEDNODEID):
                     raise FileSystemException("Directory not empty.")
             
         parent = find_parent_name(pathname)
