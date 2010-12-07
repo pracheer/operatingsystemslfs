@@ -19,5 +19,9 @@ if __name__ == "__main__":
     runcommand('mkdir temp')
     runcommand('cd temp')
     runcommand('create tempfile 30')
+    runcommand('rm tempfile')
+    runcommand('cd ..')
+    runcommand('rmdir temp')
+    runcommand('create smallfile.txt 10')
     runcommand('sync')
     
