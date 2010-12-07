@@ -16,5 +16,8 @@ if __name__ == "__main__":
     long_string = 'a'*102400  + 'a'
     runcommand('mkfs -reuse')
     runcommand('create longfile.txt 102500')
+    runcommand('mkdir temp')
+    runcommand('cd temp')
+    runcommand('create tempfile 30')
     runcommand('sync')
     
