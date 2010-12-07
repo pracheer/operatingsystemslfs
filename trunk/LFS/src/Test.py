@@ -1,3 +1,8 @@
+'''
+Created on Dec 6, 2010
+
+@author: Pracheer(pg298)
+'''
 from Shell import Shell
 
 shell = Shell()
