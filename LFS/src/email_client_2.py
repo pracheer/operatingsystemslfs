@@ -6,7 +6,7 @@ import threading
 
 host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
 port = int(sys.argv[2]) if len(sys.argv) > 2 else 8765
-toaddr = sys.argv[3] if len(sys.argv) > 3 else "uday@hotmail.com"
+toaddr = sys.argv[3] if len(sys.argv) > 3 else "pg298@cornell.edu"
 fromaddr = sys.argv[4] if len(sys.argv) > 4 else "nobody@example.com"
 
 class MsgSender(threading.Thread):
@@ -39,7 +39,7 @@ class MsgSender(threading.Thread):
         recv = s.recv(500)
         assert recv == "200 OK\n", "Something went wrong. Received from server %s" % recv
     
-        s.send("DATA\nContents_of_message_end_here\n.\n")
+        s.send("DATA\nContents_of_message_end_here_for_pg298_cornell_edu\n.\n")
         recv = s.recv(500)
         assert recv == "354 START YOUR MESSAGE AND END WITH A PERIOD ON A LINE BY ITSELF\n", "Something went wrong. Received from server %s" % recv
         recv = s.recv(500)
